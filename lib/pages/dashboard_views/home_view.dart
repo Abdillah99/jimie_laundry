@@ -14,6 +14,7 @@ import 'package:jimie_laundry/datasources/promo_datasource.dart';
 import 'package:jimie_laundry/datasources/shop_datasource.dart';
 import 'package:jimie_laundry/models/promo_model.dart';
 import 'package:jimie_laundry/models/shop_model.dart';
+import 'package:jimie_laundry/pages/detail_shop_page.dart';
 import 'package:jimie_laundry/pages/search_by_city_page.dart';
 import 'package:jimie_laundry/providers/home_provider.dart';
 import 'package:jimie_laundry/widgets/error_background.dart';
@@ -308,7 +309,9 @@ class _HomeViewState extends ConsumerState<HomeView> {
                     ShopModel item = list[index];
 
                     return GestureDetector(
-                      onTap: () {},
+                      onTap: () {
+                        Nav.push(context, DetailShopPage(shop: item));
+                      },
                       child: Container(
                         margin: EdgeInsets.fromLTRB(
                           index == 0 ? 30 : 10,
