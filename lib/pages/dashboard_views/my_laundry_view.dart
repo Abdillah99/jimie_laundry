@@ -1,6 +1,7 @@
-import 'package:d_info/d_info.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:jimie_laundry/config/app_constants.dart';
 import 'package:jimie_laundry/config/app_session.dart';
 import 'package:jimie_laundry/config/failure.dart';
 import 'package:jimie_laundry/datasources/laundry_datasource.dart';
@@ -61,8 +62,113 @@ class _MyLaundryViewState extends ConsumerState<MyLaundryView> {
     super.initState();
   }
 
+  dialogClaim() {}
+
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return Column(
+      children: [
+        header(),
+        categories(),
+      ],
+    );
+  }
+
+  Consumer categories() {
+    return Consumer(
+      builder: (_, wiRef, __) {
+        String categorySelected = wiRef.watch(myLaundryCategoryProvider);
+        return SizedBox(
+          height: 30,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: AppConstants.laundryStatusCategory.length,
+            itemBuilder: (context, index) {
+              String category = AppConstants.laundryStatusCategory[index];
+              return Padding(
+                padding: EdgeInsets.only(
+                  left: index == 0 ? 30 : 8,
+                  right: index == AppConstants.laundryStatusCategory.length - 1
+                      ? 30
+                      : 8,
+                ),
+                child: InkWell(
+                  onTap: () {
+                    setMyLaundryCategory(ref, category);
+                    print('Category $category selectedis $categorySelected');
+                  },
+                  borderRadius: BorderRadius.circular(30),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: category == categorySelected
+                            ? Colors.green
+                            : Colors.grey[400]!,
+                      ),
+                      color: category == categorySelected
+                          ? Colors.green
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 15),
+                    alignment: Alignment.center,
+                    child: Text(
+                      category,
+                      style: TextStyle(
+                        height: 1,
+                        color: category == categorySelected
+                            ? Colors.white
+                            : Colors.black,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Padding header() {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(30, 60, 30, 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'My Laundry',
+            style: GoogleFonts.montserrat(
+              fontSize: 24,
+              color: Colors.green,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Transform.translate(
+            offset: Offset(0, -8),
+            child: OutlinedButton.icon(
+              onPressed: () => dialogClaim(),
+              icon: Icon(Icons.add),
+              label: Text(
+                'Claim',
+                style: TextStyle(height: 1),
+              ),
+              style: ButtonStyle(
+                shape: MaterialStatePropertyAll(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                padding: MaterialStatePropertyAll(
+                  EdgeInsets.fromLTRB(8, 2, 16, 2),
+                ),
+              ),
+            ),
+          )
+        ],
+      ),
+    );
   }
 }

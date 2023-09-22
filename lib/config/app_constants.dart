@@ -10,7 +10,7 @@ class AppConstants {
   static const baseURL = '$_host/api';
   static const baseImageURL = '$_host/storage';
 
-  static const laundryStatusCategory = {
+  static const laundryStatusCategory = [
     'All',
     'Pickup',
     'Queue',
@@ -20,7 +20,7 @@ class AppConstants {
     'Ironed',
     'Done',
     'Delivery'
-  };
+  ];
 
   static List<Map> navMenuDashboard = [
     {
