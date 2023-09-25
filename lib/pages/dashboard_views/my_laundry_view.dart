@@ -1,13 +1,22 @@
+import 'package:d_info/d_info.dart';
+import 'package:d_input/d_input.dart';
+import 'package:d_view/d_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:grouped_list/grouped_list.dart';
 import 'package:jimie_laundry/config/app_constants.dart';
+import 'package:jimie_laundry/config/app_format.dart';
+import 'package:jimie_laundry/config/app_response.dart';
 import 'package:jimie_laundry/config/app_session.dart';
 import 'package:jimie_laundry/config/failure.dart';
+import 'package:jimie_laundry/config/nav.dart';
 import 'package:jimie_laundry/datasources/laundry_datasource.dart';
 import 'package:jimie_laundry/models/laundry_model.dart';
 import 'package:jimie_laundry/models/user_model.dart';
+import 'package:jimie_laundry/pages/detail_laundry_page.dart';
 import 'package:jimie_laundry/providers/my_laundry_provider.dart';
+import 'package:jimie_laundry/widgets/error_background.dart';
 
 class MyLaundryView extends ConsumerStatefulWidget {
   const MyLaundryView({super.key});
@@ -24,10 +33,10 @@ class _MyLaundryViewState extends ConsumerState<MyLaundryView> {
       value.fold((failure) {
         switch (value.runtimeType) {
           case ServerFailure:
-            setMyLaundryStatus(ref, 'server error');
+            setMyLaundryStatus(ref, 'Server Error');
             break;
           case NotFoundFailure:
-            setMyLaundryStatus(ref, 'Error Not Found');
+            setMyLaundryStatus(ref, 'Not Found');
             break;
           case ForbiddenFailure:
             setMyLaundryStatus(ref, 'You don\'t have access');
@@ -39,7 +48,7 @@ class _MyLaundryViewState extends ConsumerState<MyLaundryView> {
             setMyLaundryStatus(ref, 'Unauthorised');
             break;
           default:
-            setMyLaundryStatus(ref, 'Request error unknown');
+            setMyLaundryStatus(ref, 'Request Error');
             break;
         }
       }, (result) {
@@ -62,7 +71,92 @@ class _MyLaundryViewState extends ConsumerState<MyLaundryView> {
     super.initState();
   }
 
-  dialogClaim() {}
+  dialogClaim() {
+    final edtLaundryID = TextEditingController();
+    final edtClaimCode = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Form(
+          key: formKey,
+          child: SimpleDialog(
+            titlePadding: EdgeInsets.all(16),
+            contentPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+            title: Text('Claim Laundry'),
+            children: [
+              DInput(
+                controller: edtLaundryID,
+                title: 'Laundry ID',
+                radius: BorderRadius.circular(10),
+                validator: (input) => input == '' ? "Don't empty" : null,
+                inputType: TextInputType.number,
+              ),
+              DView.spaceHeight(),
+              DInput(
+                controller: edtClaimCode,
+                title: 'Claim Code',
+                radius: BorderRadius.circular(10),
+                validator: (input) => input == '' ? "Don't empty" : null,
+              ),
+              DView.spaceHeight(20),
+              ElevatedButton(
+                onPressed: () {
+                  if (formKey.currentState!.validate()) {
+                    Navigator.pop(context);
+                    claimNow(edtLaundryID.text, edtClaimCode.text);
+                  }
+                },
+                child: Text('Claim Now'),
+              ),
+              DView.spaceHeight(8),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  claimNow(String id, String claimCode) {
+    LaundryDataSource.claim(id, claimCode).then((value) {
+      value.fold(
+        (failure) {
+          switch (failure.runtimeType) {
+            case ServerFailure:
+              DInfo.toastError('Server Error');
+              break;
+            case NotFoundFailure:
+              DInfo.toastError('Not Found');
+              break;
+            case ForbiddenFailure:
+              DInfo.toastError('You don\'t have access');
+              break;
+            case BadRequestFailure:
+              DInfo.toastError('Laundry has been claimed');
+              break;
+            case InvalidInputFailure:
+              AppResponse.invalidInput(context, failure.message ?? '{}');
+              break;
+            case UnauthorisedFailure:
+              DInfo.toastError('Unauthorised');
+              break;
+            default:
+              DInfo.toastError('Request Error');
+              break;
+          }
+        },
+        (result) {
+          DInfo.toastSuccess('Claim Success');
+          getMyLaundry();
+        },
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +164,180 @@ class _MyLaundryViewState extends ConsumerState<MyLaundryView> {
       children: [
         header(),
         categories(),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () async => getMyLaundry(),
+            child: Consumer(
+              builder: (_, wiRef, __) {
+                String statusList = wiRef.watch(myLaundryStatusProvider);
+                String statusCategory = wiRef.watch(myLaundryCategoryProvider);
+                List<LaundryModel> listBackup =
+                    wiRef.watch(myLaundryListProvider);
+                if (statusList == '') return DView.loadingCircle();
+                if (statusList != 'Success') {
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(30, 0, 30, 80),
+                    child: ErrorBackground(
+                      ratio: 16 / 9,
+                      message: statusList,
+                    ),
+                  );
+                }
+                List<LaundryModel> list = [];
+                if (statusCategory == 'All') {
+                  list = List.from(listBackup);
+                } else {
+                  list = listBackup
+                      .where((element) => element.status == statusCategory)
+                      .toList();
+                }
+
+                if (list.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(30, 30, 30, 80),
+                    child: Stack(
+                      children: [
+                        const ErrorBackground(
+                          ratio: 16 / 9,
+                          message: 'Empty',
+                        ),
+                        IconButton(
+                          onPressed: () => getMyLaundry(),
+                          icon: const Icon(Icons.refresh, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return GroupedListView<LaundryModel, String>(
+                  padding: EdgeInsets.fromLTRB(30, 0, 30, 80),
+                  elements: list,
+                  groupBy: (element) => AppFormat.justDate(element.createdAt),
+                  order: GroupedListOrder.DESC,
+                  itemComparator: (element1, element2) {
+                    return element1.createdAt.compareTo(element2.createdAt);
+                  },
+                  groupSeparatorBuilder: (value) => Align(
+                    alignment: Alignment.topLeft,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.grey[400]!),
+                      ),
+                      margin: EdgeInsets.only(top: 24, bottom: 20),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      child: Text(
+                        AppFormat.shortDate(value),
+                      ),
+                    ),
+                  ),
+                  itemBuilder: (context, laundry) {
+                    return GestureDetector(
+                      onTap: () {
+                        Nav.push(context, DetailLaundryPage(laundry: laundry));
+                      },
+                      child: Container(
+                        margin: EdgeInsets.only(bottom: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.green[50],
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: EdgeInsets.all(12),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    laundry.shop.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                ),
+                                DView.spaceWidth(),
+                                Text(
+                                  AppFormat.longPrice(laundry.total),
+                                  textAlign: TextAlign.end,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            DView.spaceHeight(12),
+                            Row(
+                              children: [
+                                if (laundry.withPickup)
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.green,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    margin: EdgeInsets.only(
+                                      right: 8,
+                                    ),
+                                    child: Text(
+                                      'Pickup',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        height: 1,
+                                      ),
+                                    ),
+                                  ),
+                                if (laundry.withDelivery)
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.green,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    margin: EdgeInsets.only(
+                                      right: 8,
+                                    ),
+                                    child: Text(
+                                      'Delivery',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        height: 1,
+                                      ),
+                                    ),
+                                  ),
+                                Expanded(
+                                  child: Text(
+                                    '${laundry.weight}kg',
+                                    textAlign: TextAlign.end,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w300,
+                                    ),
+                                  ),
+                                )
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ),
       ],
     );
   }

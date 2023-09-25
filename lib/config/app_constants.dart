@@ -1,4 +1,3 @@
-import 'package:d_view/d_view.dart';
 import 'package:flutter/material.dart';
 import 'package:jimie_laundry/pages/dashboard_views/account_view.dart';
 import 'package:jimie_laundry/pages/dashboard_views/home_view.dart';
@@ -6,7 +5,7 @@ import 'package:jimie_laundry/pages/dashboard_views/my_laundry_view.dart';
 
 class AppConstants {
   static const appName = 'Jimie Laundry';
-  static const _host = 'http://127.0.0.1:8000';
+  static const _host = 'http://localhost:8000';
   static const baseURL = '$_host/api';
   static const baseImageURL = '$_host/storage';
 

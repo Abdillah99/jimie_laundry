@@ -24,7 +24,7 @@ class AppFormat {
   /// source: DateTime | String\
   /// Monday, 2 Jan 98
   static String shortDate(source) {
-    switch (source) {
+    switch (source.runtimeType) {
       case String:
         return DateFormat('EEEE, d MMM yy').format(DateTime.parse(source));
       case DateTime:
