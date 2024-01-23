@@ -1,24 +1,19 @@
 import 'package:d_button/d_button.dart';
 import 'package:d_view/d_view.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:jimie_laundry/config/app_assets.dart';
-import 'package:jimie_laundry/config/app_colors.dart';
-import 'package:jimie_laundry/config/app_constants.dart';
-import 'package:jimie_laundry/config/app_format.dart';
+import 'package:jimie_laundry/widgets/categories_card.dart';
+import 'package:jimie_laundry/widgets/promo_list.dart';
 import 'package:jimie_laundry/config/failure.dart';
 import 'package:jimie_laundry/config/nav.dart';
 import 'package:jimie_laundry/datasources/promo_datasource.dart';
 import 'package:jimie_laundry/datasources/shop_datasource.dart';
 import 'package:jimie_laundry/models/promo_model.dart';
 import 'package:jimie_laundry/models/shop_model.dart';
-import 'package:jimie_laundry/pages/detail_shop_page.dart';
 import 'package:jimie_laundry/pages/search_by_city_page.dart';
 import 'package:jimie_laundry/providers/home_provider.dart';
-import 'package:jimie_laundry/widgets/error_background.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:jimie_laundry/widgets/recomendation_list.dart';
 
 class HomeView extends ConsumerStatefulWidget {
   const HomeView({super.key});
@@ -29,6 +24,7 @@ class HomeView extends ConsumerStatefulWidget {
 
 class _HomeViewState extends ConsumerState<HomeView> {
   static final edtSearch = TextEditingController();
+
   gotoSearchCity() {
     Nav.push(context, SearchByCityPage(query: edtSearch.text));
   }
@@ -138,412 +134,36 @@ class _HomeViewState extends ConsumerState<HomeView> {
     );
   }
 
-  Consumer promo() {
-    final pageController = PageController();
-
-    return Consumer(
-      builder: (_, wiRef, __) {
-        List<PromoModel> list = wiRef.watch(homePromoListProvider);
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(30, 0, 30, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  DView.textTitle(
-                    'Promo',
-                    color: Colors.black,
-                  ),
-                  DView.textAction(
-                    () {},
-                    color: AppColors.primary,
-                  )
-                ],
-              ),
-            ),
-            if (list.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: ErrorBackground(
-                  ratio: 16 / 9,
-                  message: 'No Promo',
-                ),
-              ),
-            if (list.isNotEmpty)
-              AspectRatio(
-                aspectRatio: 16 / 9,
-                child: PageView.builder(
-                  controller: pageController,
-                  itemCount: list.length,
-                  itemBuilder: (context, index) {
-                    PromoModel item = list[index];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 30,
-                      ),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 20),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: FadeInImage(
-                                placeholder:
-                                    AssetImage(AppAssets.placeholderLaundry),
-                                image: NetworkImage(
-                                  '${AppConstants.baseImageURL}/promo/${item.image}',
-                                ),
-                                fit: BoxFit.cover,
-                                imageErrorBuilder:
-                                    (context, error, stackTrace) {
-                                  return const Icon(Icons.error);
-                                },
-                              ),
-                            ),
-                          ),
-                          Align(
-                            alignment: Alignment.bottomCenter,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
-                                color: Colors.white,
-                              ),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 6,
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    item.shop.name,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 20,
-                                    ),
-                                  ),
-                                  DView.spaceHeight(4),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        '${AppFormat.shortPrice(item.newPrice)}/Kg',
-                                        style: const TextStyle(
-                                          color: Colors.green,
-                                        ),
-                                      ),
-                                      DView.spaceWidth(),
-                                      Text(
-                                        '${AppFormat.shortPrice(item.oldPrice)}/Kg',
-                                        style: const TextStyle(
-                                          color: Colors.red,
-                                          decoration:
-                                              TextDecoration.lineThrough,
-                                        ),
-                                      )
-                                    ],
-                                  )
-                                ],
-                              ),
-                            ),
-                          )
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            SmoothPageIndicator(
-              controller: pageController,
-              count: list.length,
-              effect: WormEffect(
-                dotWidth: 12,
-                dotHeight: 4,
-                dotColor: Colors.grey[300]!,
-                activeDotColor: AppColors.primary,
-              ),
-            )
-          ],
-        );
-      },
-    );
-  }
-
-  Consumer recomendation() {
-    return Consumer(
-      builder: (_, wiRef, __) {
-        List<ShopModel> list = wiRef.watch(homeRecomendationListProvider);
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(30, 0, 30, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  DView.textTitle('Recomendation', color: Colors.black),
-                  DView.textAction(
-                    () {},
-                    text: 'See All',
-                    color: AppColors.primary,
-                  )
-                ],
-              ),
-            ),
-            if (list.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30),
-                child: ErrorBackground(
-                  ratio: 1.2,
-                  message: 'No Recomendation Yet',
-                ),
-              ),
-            if (list.isNotEmpty)
-              SizedBox(
-                height: 250,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: list.length,
-                  itemBuilder: (context, index) {
-                    ShopModel item = list[index];
-
-                    return GestureDetector(
-                      onTap: () {
-                        Nav.push(context, DetailShopPage(shop: item));
-                      },
-                      child: Container(
-                        margin: EdgeInsets.fromLTRB(
-                          index == 0 ? 30 : 10,
-                          0,
-                          index == list.length - 1 ? 30 : 10,
-                          0,
-                        ),
-                        width: 200,
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: FadeInImage(
-                                placeholder:
-                                    AssetImage(AppAssets.placeholderLaundry),
-                                image: NetworkImage(
-                                  '${AppConstants.baseImageURL}/shop/${item.image}',
-                                ),
-                                fit: BoxFit.cover,
-                                imageErrorBuilder:
-                                    (context, error, stackTrace) {
-                                  return const Icon(Icons.error);
-                                },
-                              ),
-                            ),
-                            Align(
-                              alignment: Alignment.bottomCenter,
-                              child: Container(
-                                height: 150,
-                                decoration: const BoxDecoration(
-                                  borderRadius: BorderRadius.only(
-                                    bottomLeft: Radius.circular(10),
-                                    bottomRight: Radius.circular(11),
-                                  ),
-                                  gradient: LinearGradient(
-                                    colors: [Colors.transparent, Colors.black],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomCenter,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              left: 8,
-                              bottom: 8,
-                              right: 8,
-                              child: Column(
-                                children: [
-                                  Row(
-                                    children: ['Regular', 'Express'].map(
-                                      (e) {
-                                        return Container(
-                                          decoration: BoxDecoration(
-                                            color:
-                                                Colors.green.withOpacity(0.8),
-                                            borderRadius:
-                                                BorderRadius.circular(6),
-                                          ),
-                                          margin:
-                                              const EdgeInsets.only(right: 4),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          child: Text(
-                                            e,
-                                            style: const TextStyle(
-                                              height: 1,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ).toList(),
-                                  ),
-                                  DView.spaceHeight(8),
-                                  Container(
-                                    width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    padding: const EdgeInsets.all(8),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          item.name,
-                                          style: GoogleFonts.ptSans(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 18,
-                                          ),
-                                        ),
-                                        DView.spaceHeight(4),
-                                        Row(
-                                          children: [
-                                            RatingBar.builder(
-                                              initialRating: item.rate,
-                                              itemCount: 5,
-                                              allowHalfRating: true,
-                                              itemPadding:
-                                                  const EdgeInsets.all(0),
-                                              unratedColor: Colors.grey[300],
-                                              itemBuilder: (context, index) {
-                                                return const Icon(
-                                                  Icons.star,
-                                                  color: Colors.amber,
-                                                );
-                                              },
-                                              itemSize: 12,
-                                              onRatingUpdate: (value) {},
-                                              ignoreGestures: true,
-                                            ),
-                                            DView.spaceWidth(4),
-                                            Text(
-                                              '(${item.rate})',
-                                              style: const TextStyle(
-                                                color: Colors.black87,
-                                                fontSize: 11,
-                                              ),
-                                            )
-                                          ],
-                                        ),
-                                        DView.spaceHeight(4),
-                                        Text(
-                                          item.location,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey,
-                                          ),
-                                        )
-                                      ],
-                                    ),
-                                  )
-                                ],
-                              ),
-                            )
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-
-  Consumer categories() {
-    return Consumer(
-      builder: (_, wiRef, __) {
-        String categorySelected = wiRef.watch(homeCategoryProvider);
-        return SizedBox(
-          height: 30,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: AppConstants.homeCategories.length,
-            itemBuilder: (context, index) {
-              String category = AppConstants.homeCategories[index];
-              return Padding(
-                padding: EdgeInsets.fromLTRB(
-                  index == 0 ? 30 : 8,
-                  0,
-                  index == AppConstants.homeCategories.length - 1 ? 30 : 8,
-                  0,
-                ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(30),
-                  onTap: () {
-                    setHomeCategory(ref, category);
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: categorySelected == category
-                            ? Colors.green
-                            : Colors.grey[400]!,
-                      ),
-                      color: categorySelected == category
-                          ? Colors.green
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    alignment: Alignment.center,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      category,
-                      style: TextStyle(
-                        height: 1,
-                        color: categorySelected == category
-                            ? Colors.white
-                            : Colors.black,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
   Padding header() {
+    Widget title() {
+      return Text(
+        'We\'re ready',
+        style: GoogleFonts.ptSans(
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+    }
+
+    Widget subtitle() {
+      return Text(
+        'to cleans your clothes',
+        style: GoogleFonts.ptSans(
+          fontSize: 28,
+          fontWeight: FontWeight.w400,
+          height: 1,
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(30, 20, 30, 30),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'We\'re ready',
-            style: GoogleFonts.ptSans(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          title(),
           DView.spaceHeight(4),
-          Text(
-            'to cleans your clothes',
-            style: GoogleFonts.ptSans(
-              fontSize: 28,
-              fontWeight: FontWeight.w400,
-              height: 1,
-            ),
-          ),
+          subtitle(),
           DView.spaceHeight(20),
           Column(
             children: [
@@ -615,24 +235,35 @@ class _HomeViewState extends ConsumerState<HomeView> {
     );
   }
 
-  Widget title() {
-    return Text(
-      'We\'re ready',
-      style: GoogleFonts.ptSans(
-        fontSize: 28,
-        fontWeight: FontWeight.bold,
-      ),
+  Consumer categories() {
+    return Consumer(
+      builder: (_, wiRef, __) {
+        String categorySelected = wiRef.watch(homeCategoryProvider);
+        return CategoriesCard(ref: ref, categorySelected: categorySelected);
+      },
     );
   }
 
-  Widget subtitle() {
-    return Text(
-      'to cleans your clothes',
-      style: GoogleFonts.ptSans(
-        fontSize: 28,
-        fontWeight: FontWeight.w400,
-        height: 1,
-      ),
+  Consumer promo() {
+    final pageController = PageController();
+
+    return Consumer(
+      builder: (_, wiRef, __) {
+        List<PromoModel> list = wiRef.watch(homePromoListProvider);
+        return PromoCard(
+          pageController: pageController,
+          list: list,
+        );
+      },
+    );
+  }
+
+  Consumer recomendation() {
+    return Consumer(
+      builder: (_, wiRef, __) {
+        List<ShopModel> list = wiRef.watch(homeRecomendationListProvider);
+        return RecomendationCard(list: list);
+      },
     );
   }
 }
